@@ -48,7 +48,7 @@ RUN apt-get update; \
     ## $WINE_PATH/wine
 
 # Stage 2: Final
-# Refference: https://conanexiles.fandom.com/wiki/Dedicated_Server_Setup:_Linux_and_Wine
+# Refference: https://ENSHROUDEDexiles.fandom.com/wiki/Dedicated_Server_Setup:_Linux_and_Wine
 FROM debian:trixie-slim
 
 ARG DEBIAN_FRONTEND=noninteractive \
@@ -86,9 +86,9 @@ ARG DEBIAN_FRONTEND=noninteractive \
     
 ENV \
     # Primary Variables
-    APP_NAME="conan" \
+    APP_NAME="ENSHROUDED" \
     APP_FILES="/app" \
-    APP_EXE="ConanSandboxServer.exe" \
+    APP_EXE="ENSHROUDEDSandboxServer.exe" \
     WORLD_FILES="/world" \
     STEAMCMD_PATH="/opt/steamcmd" \
     WINE_PATH="/opt/wine-staging/bin" \
@@ -137,7 +137,7 @@ ENV \
     $WORLD_FILES/Mods \
     $WORLD_FILES/Engine/Config \
     $APP_FILES/Engine \
-    $APP_FILES/ConanSandbox"
+    $APP_FILES/ENSHROUDEDSandbox"
     	
 ENV \   
     STEAMCMD_LOGS="$STEAMCMD_PROFILE/logs" \ 
@@ -170,11 +170,11 @@ RUN set -eux; \
     mkdir -p $DIRECTORIES; \
     ln -s "/home/$APP_NAME/Steam/logs" "$LOGS/steamcmd"; \
     ln -sf "$WORLD_FILES/Engine/Config" "$APP_FILES/Engine"; \
-    ln -sf "$WORLD_FILES/Saved" "$APP_FILES/ConanSandbox"; \
-    ln -sf "$WORLD_FILES/Config" "$APP_FILES/ConanSandbox"; \
-    ln -sf "$WORLD_FILES/Mods" "$APP_FILES/ConanSandbox"; \
-    touch "$APP_LOGS/ConanSandbox.log"; \
-    ln -sf "$APP_LOGS/ConanSandbox.log" "$WORLD_FILES/Saved/Logs/ConanSandbox.log"; \
+    ln -sf "$WORLD_FILES/Saved" "$APP_FILES/ENSHROUDEDSandbox"; \
+    ln -sf "$WORLD_FILES/Config" "$APP_FILES/ENSHROUDEDSandbox"; \
+    ln -sf "$WORLD_FILES/Mods" "$APP_FILES/ENSHROUDEDSandbox"; \
+    touch "$APP_LOGS/ENSHROUDEDSandbox.log"; \
+    ln -sf "$APP_LOGS/ENSHROUDEDSandbox.log" "$WORLD_FILES/Saved/Logs/ENSHROUDEDSandbox.log"; \
     \
     # Create symlinks for wine
     # NOTE Skipping wine32 i386
@@ -235,7 +235,7 @@ COPY --from=opt --chown=$APP_NAME:$APP_NAME /root/Steam $STEAMCMD_PROFILE
 VOLUME ["$APP_FILES"]
 VOLUME ["$WORLD_FILES"]
 
-# Expose necessary ports: (https://www.conanexiles.com/dedicated-servers/)
+# Expose necessary ports: (https://www.ENSHROUDEDexiles.com/dedicated-servers/)
 EXPOSE \
     # Game port (UDP): Default 7777, configurable in Engine.ini or via command line
     7777/udp \
@@ -253,4 +253,4 @@ EXPOSE \
 #HEALTHCHECK --interval=1m --timeout=3s CMD pidof $APP_EXE || exit 1
 
 ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["conan_up.sh"]
+CMD ["ENSHROUDED_up.sh"]

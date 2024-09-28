@@ -1,8 +1,8 @@
-# Docker Conan-Exiles Server Images
+# Docker Enshrouded Server Images
 
-This Docker image provides a Conan-Exiles dedicated server, supporting **both `amd64` and `arm64` (x86, arm) architectures.**
+This Docker image provides a Enshrouded dedicated server, supporting **both `amd64` and `arm64` (x86, arm) architectures.**
 
-![Teriyakidactyl Delivers!™](/images/teriyakidactyl_conan.png)
+![Teriyakidactyl Delivers!™](/images/repo.png)
 
 **_Teriyakidactyl Delivers!™_**
 
@@ -22,7 +22,7 @@ Configure your server using the following environment variables:
 - `SERVER_PLAYER_PASS`: Server password (default: "MySecretPassword")
 - `SERVER_ADMIN_PASS`: Server password (default: "MySecretPasswordAdmin")
 - `SERVER_NAME`: Server name (default: "Teriyakolypse")
-- `SERVER_REGION_ID`: [Region ID](https://shockbyte.com/billing/knowledgebase/706/How-to-Change-your-Visible-Server-Region-in-Conan-Exiles.html), (default: 1, 'North-America')
+- `SERVER_REGION_ID`: [Region ID](https://shockbyte.com/billing/knowledgebase/706/How-to-Change-your-Visible-Server-Region-in-ENSHROUDED-Exiles.html), (default: 1, 'North-America')
 - `SERVER_MOD_IDS`: Example: 3039478786,2879367569
 - `SERVER_ALLOW_LIST`: List of [SteamID64](https://www.steamidfinder.com/) strings to indicate allowed players (default: empty, allow-all).  
 - `SERVER_NUDITY_POLICY`: 0 none, 1 partial, 2 full (default: 0)
@@ -32,13 +32,13 @@ Configure your server using the following environment variables:
 1. Pull the image:
    
 ```bash
-docker pull ghcr.io/teriyakidactyl/docker-conan-exiles-server:latest
+docker pull ghcr.io/teriyakidactyl/docker-ENSHROUDED-exiles-server:latest
 ```
 
 2. Run the container:
    
 ```bash
-UR_PATH="/root/conan"
+UR_PATH="/root/ENSHROUDED"
 mkdir -p $UR_PATH/world  $UR_PATH/app
 
 docker run -d \
@@ -48,22 +48,22 @@ docker run -d \
 -v $UR_PATH/world:/world \
 -v $UR_PATH/app:/app \
 -p 7777-7778:7777-7778/udp \
---name Conan-Exiles-Server \
-ghcr.io/teriyakidactyl/docker-conan-exiles-server:latest
+--name ENSHROUDED-Exiles-Server \
+ghcr.io/teriyakidactyl/docker-ENSHROUDED-exiles-server:latest
 
 ```
 
-Replace `UR_PATH="/root/conan"` with the path where you want to store your app/world data.
+Replace `UR_PATH="/root/ENSHROUDED"` with the path where you want to store your app/world data.
 
 ## Building the Image
 
 To build the image yourself:
 
-```docker build -t ghcr.io/teriyakidactyl/docker-conan-exiles-server:latest .```
+```docker build -t ghcr.io/teriyakidactyl/docker-ENSHROUDED-exiles-server:latest .```
 
 ## Healthcheck
 
-The container includes a basic healthcheck that verifies if the Conan server process is running.
+The container includes a basic healthcheck that verifies if the ENSHROUDED server process is running.
 
 ## Support
 

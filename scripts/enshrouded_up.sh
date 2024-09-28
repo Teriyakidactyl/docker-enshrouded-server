@@ -1,6 +1,6 @@
 #!/bin/bash
-source $SCRIPTS/conan_logging_functions
-source $SCRIPTS/conan_server_functions
+source $SCRIPTS/ENSHROUDED_logging_functions
+source $SCRIPTS/ENSHROUDED_SERVER_functions
 
 
 # Set Variables ---------------------------------------------------------------------------
