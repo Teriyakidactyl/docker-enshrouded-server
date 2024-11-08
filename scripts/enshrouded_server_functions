@@ -1,11 +1,8 @@
-# TODO UDP process monitor https://github.com/lloesche/valheim-server-docker/blob/0996dc3a1fc1f5f88bcbd4056a28254adadb884e/common#L148
-# TODO RCON Configuration https://ENSHROUDEDexiles.fandom.com/wiki/Rcon
-# TODO RCON 'Attach' mode
+# Refference: https://github.com/mornedhels/enshrouded-server/blob/main/dockerfiles/Dockerfile
+# Refference: https://enshrouded.fandom.com/wiki/Dedicated_Server_Hosting
 
 # For Server Download
 STEAM_ENSHROUDED_SERVER_APPID="2278520"
-# For Mod Downloads
-STEAM_ENSHROUDED_CLIENT_APPID="440900"
 
 check_whitelist() {
     if [ -n "$SERVER_ALLOW_LIST" ]; then
@@ -101,61 +98,6 @@ needs_update() {
     fi
 }
 
-mod_updates() {
-    
-    # https://forums.funcom.com/t/ENSHROUDED-exiles-dedicated-server-launcher-official-version-1-7-8-beta-1-7-9/21699#mods
-    # force_install_dir "$WORLD_FILES/Mods" > /Mods/steamapps/workshop/conent/$MOD_ID
-
-    # mod_updates(): Manages mods for ENSHROUDED Exiles server
-    # - Downloads specified mods via SteamCMD
-    # - Removes unspecified mods
-    # - Updates modlist.txt
-    # Logic:
-    # 1. If mods specified:
-    #    - Download each mod
-    #    - Link .pak files to server mod directory
-    #    - Remove obsolete mods
-    #    - Update modlist.txt
-    # 2. If no mods: Clear mod directory, create empty modlist.txt
-
-    # Mod Updates
-    if [ -n "$SERVER_MOD_IDS" ]; then
-        # Create an array of current mod IDs
-        IFS=',' read -ra MOD_IDS <<< "$SERVER_MOD_IDS"
-        rm -rd /world/Mods/*
-        # Download and update mods
-        for MOD_ID in "${MOD_IDS[@]}"; do
-            log "Downloading mod with ID: $MOD_ID"
-            $STEAMCMD_PATH/steamcmd.sh \
-            +force_install_dir "$STEAM_LIBRARY" \
-            +login anonymous \
-            +workshop_download_item $STEAM_ENSHROUDED_CLIENT_APPID $MOD_ID \
-            +quit | log_stdout
-            find "$STEAM_LIBRARY" -path "*$MOD_ID*.pak" -exec ln -sf {} /world/Mods \; 
-        done
-
-        # Remove mods that are no longer in the list
-        for MOD_DIR in "$WORLD_FILES/Mods"/*; do
-            if [ -d "$MOD_DIR" ]; then
-                MOD_ID=$(basename "$MOD_DIR")
-                if ! [[ " ${MOD_IDS[@]} " =~ " ${MOD_ID} " ]]; then
-                    log "Removing mod with ID: $MOD_ID"
-                    rm -rf "$MOD_DIR"
-                fi
-            fi
-        done
-
-        # Create the modlist.txt file
-        find "$WORLD_FILES/Mods" -type l -name "*.pak" -exec basename {} \; | sed 's/^/*/' > "$WORLD_FILES/Mods/modlist.txt"
-        log "Mods enabled: "
-        cat $WORLD_FILES/Mods/modlist.txt | log_stdout
-    else
-        rm -rf $WORLD_FILES/Mods/*
-        > "$WORLD_FILES/Mods/modlist.txt"  # Create empty modlist.txt
-    fi
-
-}
-
 update_config_element() {
     local element="$1"
     local new_value="$2"
@@ -179,20 +121,9 @@ server_start() {
     log "+----------------------------------+"
     sleep 1
 
-    # Execute the server command, reff: https://www.valheimgame.com/support/a-guide-to-dedicated-servers/
-
-    # Update game configs, https://www.bestENSHROUDEDhosting.com/guides/how-to-configure-your-ENSHROUDED-exiles-server-all-options-explained/
-    update_config_element "ServerName" "$SERVER_NAME"
-    update_config_element "ServerPassword" "$SERVER_PLAYER_PASS"
-    update_config_element "AdminPassword" "$SERVER_ADMIN_PASS"
-    update_config_element "serverRegion" "$SERVER_REGION_ID"
-    update_config_element "MaxNudity" "$SERVER_NUDITY_POLICY"
-
     log "Configuration files updated successfully"
 
-    # https://forums.funcom.com/t/ENSHROUDED-exiles-dedicated-server-launcher-official-version-1-7-8-beta-1-7-9/21699
-    # https://steamcommunity.com/sharedfiles/filedetails/?id=853969975
-    log "Starting ENSHROUDED-Exiles (@ $APP_COMMAND) via WINE, WINEPREFIX=$WINEPREFIX, DISPLAY=$DISPLAY"
+    log "Starting Enshrouded (@ $APP_COMMAND) via WINE, WINEPREFIX=$WINEPREFIX, DISPLAY=$DISPLAY"
     xvfb-run \
     --auto-servernum \
     --server-args='-screen 0 640x480x24:32 -nolisten tcp' $APP_COMMAND \

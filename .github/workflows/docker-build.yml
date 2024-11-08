@@ -49,7 +49,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ghcr.io/teriyakidactyl/docker-ENSHROUDED-exiles-server
+          images: ghcr.io/teriyakidactyl/docker-enshrouded-server
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -59,7 +59,7 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
           labels: |
             org.opencontainers.image.title=Valheim Server
-            org.opencontainers.image.description=Docker image for ENSHROUDED-Exiles dedicated server
+            org.opencontainers.image.description=Docker image for Enshrouded dedicated server
             org.opencontainers.image.vendor=TeriyakiDactyl
             org.opencontainers.image.version={{version}}
             org.opencontainers.image.created={{date 'yyyy-MM-dd'}}
