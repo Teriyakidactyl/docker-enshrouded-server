@@ -21,7 +21,6 @@ ENV \
     # Primary Variables
     APP_NAME="enshrouded" \
     APP_EXE="enshrouded_server.exe" \
-    APP_ARGS="-log" \
     \
     # SteamCMD
     STEAM_SERVER_APPID="2278520" \
