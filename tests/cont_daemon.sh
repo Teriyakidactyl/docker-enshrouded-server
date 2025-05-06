@@ -30,3 +30,6 @@ docker run -d \
 
 # Optional: Attach to logs or monitor with btop
 btop
+
+
+# xvfb-run --auto-servernum --server-args='-screen 0 640x480x24:32 -nolisten tcp' proton runinprefix /app/enshrouded_server.exe

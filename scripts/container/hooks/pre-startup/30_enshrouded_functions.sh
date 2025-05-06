@@ -92,6 +92,8 @@ check_whitelist() {
     fi
 }
 
+
+
 # Display server configuration
 log "+----------------------------------+"
 log "SERVER_NAME: $SERVER_NAME"
@@ -100,7 +102,24 @@ log "+----------------------------------+"
 sleep 1
 
 # TODO implement Enshrouded specific functions for settings etc.
-# # Execute the server command, reff: https://www.valheimgame.com/support/a-guide-to-dedicated-servers/
+
+# FIXME placeholder
+# Refference: https://enshrouded.zendesk.com/hc/en-us/articles/16055441447709-Dedicated-Server-Configuration
+# https://nodecraft.com/support/games/enshrouded/changing-settings-for-an-enshrouded-server
+cat > $APP_FILES/enshrouded_server.json << EOF
+{
+  "name": "$SERVER_NAME",
+  "saveDirectory": "$WORLD_FILES",
+  "logDirectory": "$LOGS",
+  "ip": "0.0.0.0",
+  "queryPort": $SERVER_QUERY_PORT,
+  "slotCount": 16,
+  "voiceChatMode": "Proximity",
+  "enableVoiceChat": false,
+  "enableTextChat": false,
+  "gameSettingsPreset": "Default"
+}
+EOF
 
 # # Update game configs, https://www.bestconanhosting.com/guides/how-to-configure-your-conan-exiles-server-all-options-explained/
 # update_config_element "ServerName" "$SERVER_NAME"

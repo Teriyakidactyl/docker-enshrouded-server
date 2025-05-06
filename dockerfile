@@ -40,16 +40,16 @@ ENV \
     LOG_FILTER_SKIP=""
 
 # Create additional directories and links specific to Enshrouded
-RUN mkdir -p $WORLD_FILES/savegame \
-             $WORLD_FILES/logs \
-             $WORLD_FILES/config \
-             $APP_FILES && \
-    ln -sf "$WORLD_FILES/savegame" "$APP_FILES/savegame" && \
-    ln -sf "$WORLD_FILES/logs" "$APP_FILES/logs" && \
-    ln -sf "$WORLD_FILES/config" "$APP_FILES/config" && \
-    touch "$LOGS/enshrouded_server.log" && \
-    ln -sf "$LOGS/enshrouded_server.log" "$WORLD_FILES/logs/enshrouded_server.log" && \
-    chown -R $APP_USER:$APP_USER $WORLD_FILES $APP_FILES $LOGS
+# RUN mkdir -p $WORLD_FILES/savegame \
+#              $WORLD_FILES/logs \
+#              $WORLD_FILES/config \
+#              $APP_FILES && \
+#     ln -sf "$WORLD_FILES/savegame" "$APP_FILES/savegame" && \
+#     ln -sf "$WORLD_FILES/logs" "$APP_FILES/logs" && \
+#     ln -sf "$WORLD_FILES/config" "$APP_FILES/config" && \
+#     touch "$LOGS/enshrouded_server.log" && \
+#     ln -sf "$LOGS/enshrouded_server.log" "$WORLD_FILES/logs/enshrouded_server.log" && \
+#     chown -R $APP_USER:$APP_USER $WORLD_FILES $APP_FILES $LOGS
 
 # Copy server scripts
 COPY --chown=${APP_USER}:${APP_USER} scripts ${SCRIPTS}
