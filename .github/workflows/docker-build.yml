@@ -37,8 +37,8 @@ env:
   # Matrix Configuration - Base image tags to build upon
   # These should match the available tags from the base image
   MATRIX_BASE_TAGS: |
-    trixie-20250407-slim_wine-staging-10.5
-    bookworm-20250407-slim_wine-staging-10.5
+    trixie-20250407-slim_proton-9.26
+    bookworm-20250407-slim_proton-9.26
     trixie-20250407-slim_wine-stable-10.0.0.0
     bookworm-20250407-slim_wine-stable-10.0.0.0
     
@@ -141,7 +141,7 @@ jobs:
             echo "SIMPLE_TAG=$SIMPLE_TAG" >> $GITHUB_ENV
             
             # Latest tag per architecture (if using the default base tag)
-            if [[ "${{ matrix.base_tag }}" == "trixie-20250407-slim_wine-staging-10.5" ]]; then
+            if [[ "${{ matrix.base_tag }}" == "trixie-20250407-slim_proton" ]]; then
               echo "LATEST_ARCH_TAG=latest-$ARCHITECTURE" >> $GITHUB_ENV
             else
               echo "LATEST_ARCH_TAG=" >> $GITHUB_ENV
@@ -246,7 +246,7 @@ jobs:
             echo "FULL_MANIFEST_TAG=${{ matrix.base_tag }}" >> $GITHUB_ENV
             
             # Set latest tag if this is the default base tag
-            if [[ "${{ matrix.base_tag }}" == "trixie-20250407-slim_wine-staging-10.5" ]]; then
+            if [[ "${{ matrix.base_tag }}" == "trixie-20250407-slim_proton" ]]; then
               echo "LATEST_TAG=latest" >> $GITHUB_ENV
               echo "HAS_LATEST_TAG=true" >> $GITHUB_ENV
             else
@@ -269,7 +269,7 @@ jobs:
           
           echo "::notice::Successfully created manifest for ${{ env.REGISTRY_IMAGE }}:${{ env.SIMPLE_MANIFEST_TAG }}"
           
-          # Create full manifest tag with Wine info (e.g., "trixie-20250407-slim_wine-staging-10.5")
+          # Create full manifest tag with Wine info (e.g., "trixie-20250407-slim_proton")
           docker buildx imagetools create --tag ${{ env.REGISTRY_IMAGE }}:${{ env.FULL_MANIFEST_TAG }} \
             ${{ env.REGISTRY_IMAGE }}:${{ env.FULL_MANIFEST_TAG }}-amd64 \
             ${{ env.REGISTRY_IMAGE }}:${{ env.FULL_MANIFEST_TAG }}-arm64
