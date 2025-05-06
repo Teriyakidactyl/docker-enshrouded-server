@@ -93,16 +93,6 @@ check_whitelist() {
 }
 
 
-# Wine threading optimizations
-export WINE_MT_TIMEOUT=10000      # Increase timeout for Wine mutex operations
-export WINE_PTHREAD_MUTEX_FAST=1  # Use fast mutex implementation
-export WINE_HEAP_DELAY_FREE=100   # Delay heap frees to reduce lock contention
-export WINEESYNC=1                # Use eventfd-based synchronization for better performance
-export WINEFSYNC=1                # Use futex-based synchronization if kernel supports it
-
-export BOX64_MUTEX_ALIGNED=1      # Ensure mutexes are properly aligned in memory
-export BOX64_DYNAREC_SAFEFLAGS=1  # More conservative but stable threading behavio
-
 # Display server configuration
 log "+----------------------------------+"
 log "SERVER_NAME: $SERVER_NAME"
