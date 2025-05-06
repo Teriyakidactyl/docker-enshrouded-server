@@ -167,13 +167,3 @@ cat > $APP_FILES/enshrouded_server.json << EOF
     ]
 }
 EOF
-
-# # Update game configs, https://www.bestconanhosting.com/guides/how-to-configure-your-conan-exiles-server-all-options-explained/
-# update_config_element "ServerName" "$SERVER_NAME"
-# update_config_element "ServerPassword" "$SERVER_PLAYER_PASS"
-# update_config_element "AdminPassword" "$SERVER_ADMIN_PASS"
-# update_config_element "serverRegion" "$SERVER_REGION_ID"
-# update_config_element "MaxNudity" "$SERVER_NUDITY_POLICY"
-
-# check_whitelist
-# mod_updates

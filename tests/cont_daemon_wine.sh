@@ -3,7 +3,7 @@
 # Start the Enshrouded server container in detached mode
 
 # Container name
-CONTAINER_NAME="Enshrouded-Server"
+CONTAINER_NAME="Enshrouded-Server-ARM"
 
 # Image name
 IMAGE_NAME="ghcr.io/teriyakidactyl/docker-enshrouded-server:bookworm-20250407-slim_wine-stable-10.0.0.0_dev"
