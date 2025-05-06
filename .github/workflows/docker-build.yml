@@ -37,8 +37,8 @@ env:
   # Matrix Configuration - Base image tags to build upon
   # These should match the available tags from the base image
   MATRIX_BASE_TAGS: |
-    trixie-20250407-slim_proton-9.26
-    bookworm-20250407-slim_proton-9.26
+    trixie-20250407-slim_proton-9.27
+    bookworm-20250407-slim_proton-9.27
     trixie-20250407-slim_wine-stable-10.0.0.0
     bookworm-20250407-slim_wine-stable-10.0.0.0
     
