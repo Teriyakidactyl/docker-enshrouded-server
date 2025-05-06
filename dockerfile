@@ -62,7 +62,3 @@ EXPOSE \
     # Query port (TCP/UDP)
     15637/tcp \
     15637/udp
-
-# Set the entrypoint and default command
-ENTRYPOINT ["/bin/bash", "-c"]
-CMD ["enshrouded_up.sh"]

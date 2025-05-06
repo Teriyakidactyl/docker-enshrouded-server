@@ -6,7 +6,7 @@
 CONTAINER_NAME="Enshrouded-Server"
 
 # Image name
-IMAGE_NAME="ghcr.io/teriyakidactyl/docker-steamcmd-server:bookworm-20250407-slim_proton-9.26_dev"
+IMAGE_NAME="ghcr.io/teriyakidactyl/docker-enshrouded-server:bookworm-20250407-slim_proton-9.26_dev"
 
 # Stop and remove the container if it already exists
 if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
