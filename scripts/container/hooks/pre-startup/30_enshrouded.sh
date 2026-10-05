@@ -3,6 +3,7 @@
 set -Eeuo pipefail
 
 HOOK_NAME="30_enshrouded.sh"
+ENSHROUDED_CONFIG_TEMPLATE="${ENSHROUDED_CONFIG_TEMPLATE:-/usr/local/share/enshrouded/enshrouded_server.default.json}"
 ENSHROUDED_CONFIG_PATH="${ENSHROUDED_CONFIG_PATH:-$WORLD_FILES/enshrouded_server.json}"
 ENSHROUDED_SAVE_PATH="${ENSHROUDED_SAVE_PATH:-$WORLD_FILES/savegame}"
 ENSHROUDED_LOG_PATH="${ENSHROUDED_LOG_PATH:-$WORLD_FILES/logs}"
@@ -163,54 +164,35 @@ persist_file() {
 }
 
 create_initial_config() {
-    local admin_password friend_password guest_password tmp
+    local admin_password friend_password guest_password visitor_password tmp
+
+    if ! jq -e '
+        type == "object"
+        and (.userGroups | type == "array" and length >= 4)
+        and (.gameSettings | type == "object")
+        and (.tags | type == "array")
+        and (.bans | type == "array")
+    ' "$ENSHROUDED_CONFIG_TEMPLATE" >/dev/null; then
+        fail "Enshrouded config template is invalid: $ENSHROUDED_CONFIG_TEMPLATE"
+        return 1
+    fi
 
     admin_password="$(random_password)"
     friend_password="$(random_password)"
     guest_password="$(random_password)"
+    visitor_password="$(random_password)"
     tmp="$(mktemp "${ENSHROUDED_CONFIG_PATH}.initial.XXXXXX")"
 
-    jq -n         --arg admin_password "$admin_password"         --arg friend_password "$friend_password"         --arg guest_password "$guest_password"         '{
-            name: "Enshrouded Server",
-            saveDirectory: "./savegame",
-            logDirectory: "./logs",
-            ip: "0.0.0.0",
-            queryPort: 15637,
-            slotCount: 16,
-            voiceChatMode: "Proximity",
-            enableVoiceChat: false,
-            enableTextChat: false,
-            gameSettingsPreset: "Default",
-            userGroups: [
-                {
-                    name: "Admin",
-                    password: $admin_password,
-                    canKickBan: true,
-                    canAccessInventories: true,
-                    canEditBase: true,
-                    canExtendBase: true,
-                    reservedSlots: 1
-                },
-                {
-                    name: "Friend",
-                    password: $friend_password,
-                    canKickBan: false,
-                    canAccessInventories: true,
-                    canEditBase: true,
-                    canExtendBase: true,
-                    reservedSlots: 3
-                },
-                {
-                    name: "Guest",
-                    password: $guest_password,
-                    canKickBan: false,
-                    canAccessInventories: false,
-                    canEditBase: false,
-                    canExtendBase: false,
-                    reservedSlots: 0
-                }
-            ]
-        }' > "$tmp"
+    jq \
+        --arg admin_password "$admin_password" \
+        --arg friend_password "$friend_password" \
+        --arg guest_password "$guest_password" \
+        --arg visitor_password "$visitor_password" \
+        '.userGroups[0].password = $admin_password
+         | .userGroups[1].password = $friend_password
+         | .userGroups[2].password = $guest_password
+         | .userGroups[3].password = $visitor_password' \
+        "$ENSHROUDED_CONFIG_TEMPLATE" > "$tmp"
 
     install -m 0600 "$tmp" "$ENSHROUDED_CONFIG_PATH"
     rm -f "$tmp"
@@ -257,22 +239,32 @@ migrate_legacy_password() {
     legacy_password="$(jq -r '.password // empty' "$candidate")"
     group_count="$(jq '(.userGroups // []) | length' "$candidate")"
 
-    if [ -n "$legacy_password" ] && [ "$group_count" -eq 0 ]; then
-        jq_apply "$candidate"             --arg password "$legacy_password"             '.userGroups = [{
+    if [ -z "$legacy_password" ]; then
+        return 0
+    fi
+
+    if [ "$group_count" -eq 0 ]; then
+        jq_apply "$candidate" \
+            --arg password "$legacy_password" \
+            '.userGroups = [{
                 name: "Default",
                 password: $password,
                 canKickBan: false,
                 canAccessInventories: true,
+                canEditWorld: true,
                 canEditBase: true,
-                canExtendBase: true,
+                canExtendBase: false,
                 reservedSlots: 0
             }] | .password = ""'
         log "Migrated deprecated top-level Enshrouded password into a Default user group" "$HOOK_NAME"
+    else
+        jq_apply "$candidate" '.password = ""'
+        warn "Cleared deprecated top-level Enshrouded password because userGroups are already configured"
     fi
 }
 
 role_env_present() {
-    compgen -A variable | grep -Eq '^SERVER_ROLE_[0-9]+_'
+    compgen -A variable | grep -E '^SERVER_ROLE_[0-9]+_' >/dev/null
 }
 
 role_password_env_present() {
