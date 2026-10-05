@@ -1,97 +1,251 @@
-name: Build Docker Images
+name: Build Enshrouded Server Docker Images
 
-# Defines when the workflow should run
 on:
   push:
-    branches:
-      - dev
-      - main
+    branches: [dev, main]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.dockerignore'
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - 'tests/**'
   pull_request:
-    branches:
-      - dev
-      - main
-  workflow_dispatch:  # Allows manual triggering
+    branches: [dev, main]
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.dockerignore'
+      - '.github/workflows/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY_IMAGE: ghcr.io/teriyakidactyl/docker-enshrouded-server
+  BASE_REGISTRY_IMAGE: ghcr.io/teriyakidactyl/docker-steamcmd-server
 
 jobs:
-  build:
-    name: Build Docker Images
+  quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      # Check out the repository code
-      - name: Check out repository
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      # Set up Docker Buildx for multi-architecture builds
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Cache Docker layers to speed up subsequent builds
-      - name: Cache Docker layers
-        uses: actions/cache@v2.1.4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-
-      # Log in to GitHub Container Registry (only for pushes, not PRs)
-      - name: Log in to GitHub Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_PAT }}
-
-      # Generate metadata for Docker image, including tags
-      - name: Generate Docker metadata
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ghcr.io/teriyakidactyl/docker-enshrouded-server
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,format=long
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-          labels: |
-            org.opencontainers.image.title=Valheim Server
-            org.opencontainers.image.description=Docker image for Enshrouded dedicated server
-            org.opencontainers.image.vendor=TeriyakiDactyl
-            org.opencontainers.image.version={{version}}
-            org.opencontainers.image.created={{date 'yyyy-MM-dd'}}
-            org.opencontainers.image.revision={{sha}}
-            com.example.git.branch={{branch}}
-
-      # Prepare additional build arguments
-      - name: Prepare build arguments
-        id: prep
+      - name: Validate shell scripts
         run: |
-          echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          sudo apt-get update
+          sudo apt-get install -y shellcheck jq
+          find scripts tests -type f -name '*.sh' -print0 | xargs -0 -r bash -n
+          find scripts tests -type f -name '*.sh' -print0 | xargs -0 -r shellcheck --severity=error
 
-      # Build and push the Docker image
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: error
+
+      - name: Test Enshrouded contracts
+        run: |
+          for test_script in tests/test_*.sh; do
+            bash "$test_script"
+          done
+
+      - name: Validate Compose
+        run: docker compose config >/dev/null
+
+  build:
+    needs: quality
+    name: build (${{ matrix.family }}, ${{ matrix.arch }}, ${{ matrix.runtime_tag }})
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - family: trixie
+            arch: amd64
+            platform: linux/amd64
+            base_tag: trixie_proton-11.7
+            runtime_type: proton
+            runtime_tag: proton-11.7
+          - family: trixie
+            arch: arm64
+            platform: linux/arm64
+            base_tag: trixie_wine-staging
+            runtime_type: wine
+            runtime_tag: wine-staging
+          - family: bookworm
+            arch: amd64
+            platform: linux/amd64
+            base_tag: bookworm_proton-10.34
+            runtime_type: proton
+            runtime_tag: proton-10.34
+          - family: bookworm
+            arch: arm64
+            platform: linux/arm64
+            base_tag: bookworm_wine-staging
+            runtime_type: wine
+            runtime_tag: wine-staging
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Prepare tags
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            FAMILY_TAG="${{ matrix.family }}_dev"
+          else
+            FAMILY_TAG="${{ matrix.family }}"
+          fi
+          echo "FAMILY_TAG=$FAMILY_TAG" >> "$GITHUB_ENV"
+          echo "ARCH_TAG=$FAMILY_TAG-${{ matrix.arch }}" >> "$GITHUB_ENV"
+          echo "DETAIL_TAG=$FAMILY_TAG-${{ matrix.runtime_tag }}-${{ matrix.arch }}" >> "$GITHUB_ENV"
+          echo "CANDIDATE_TAG=candidate-${{ matrix.family }}-${{ matrix.arch }}-${{ github.sha }}" >> "$GITHUB_ENV"
+
+          if [[ "${{ github.ref }}" == "refs/heads/main" && "${{ matrix.family }}" == "trixie" ]]; then
+            echo "LATEST_ARCH_TAG=latest-${{ matrix.arch }}" >> "$GITHUB_ENV"
+          else
+            echo "LATEST_ARCH_TAG=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build candidate image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64  # Multi-architecture build
-          push: ${{ github.event_name != 'pull_request' }}  # Only push on non-PR events
-          tags: ${{ steps.meta.outputs.tags }}  # Use generated tags
-          labels: ${{ steps.meta.outputs.labels }}  # Use generated labels
-          build-args: |  # Pass build arguments to Dockerfile
-            SOURCE_COMMIT=${{ github.sha }}
-            BUILD_DATE=${{ steps.prep.outputs.build_date }}
-            BRANCH_NAME=${{ github.ref_name }}
-          cache-from: type=local,src=/tmp/.buildx-cache  # Use cached layers
-          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max  # Update cache
+          push: false
+          load: true
+          tags: ${{ env.REGISTRY_IMAGE }}:${{ env.CANDIDATE_TAG }}
+          build-args: |
+            BASE_TAG=${{ matrix.base_tag }}
+          platforms: ${{ matrix.platform }}
+          cache-from: type=gha,scope=${{ matrix.base_tag }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=${{ matrix.base_tag }}-${{ matrix.arch }},mode=max
 
-      # Move cache (Temporary fix for cache handling)
-      - name: Move cache (Temporary fix)
+      - name: Smoke test selected compatibility runtime
+        env:
+          IMAGE: ${{ env.REGISTRY_IMAGE }}:${{ env.CANDIDATE_TAG }}
+          PLATFORM: ${{ matrix.platform }}
+          RUNTIME_TYPE: ${{ matrix.runtime_type }}
+          ARCH: ${{ matrix.arch }}
         run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
-          
+          docker run --rm --platform "$PLATFORM"             -e RUNTIME_TYPE="$RUNTIME_TYPE"             -e ARCH="$ARCH"             --entrypoint /bin/bash "$IMAGE" -lc '
+              set -euo pipefail
+              command -v jq
+              case "$RUNTIME_TYPE" in
+                proton) command -v proton ;;
+                wine) command -v wine ;;
+                *) echo "unknown runtime type: $RUNTIME_TYPE" >&2; exit 1 ;;
+              esac
+              if [ "$ARCH" = arm64 ]; then
+                command -v box64
+              fi
+            '
+
+      - name: Smoke test Enshrouded pre-start contract
+        env:
+          IMAGE: ${{ env.REGISTRY_IMAGE }}:${{ env.CANDIDATE_TAG }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          docker run --rm --platform "$PLATFORM" --entrypoint /bin/bash "$IMAGE" -lc '
+            set -euo pipefail
+            source /etc/environment
+            source "$SCRIPTS/container/logging.sh"
+            root="$(mktemp -d)"
+            export APP_FILES="$root/app"
+            export WORLD_FILES="$root/world"
+            mkdir -p "$APP_FILES"
+            printf "fake\n" > "$APP_FILES/enshrouded_server.exe"
+            export SERVER_NAME="CI Enshrouded Server"
+            export SERVER_ROLE_0_PASSWORD="ci-secret"
+            source "$HOOK_DIRECTORIES/pre-startup/30_enshrouded.sh"
+            test -L "$APP_FILES/enshrouded_server.json"
+            test -L "$APP_FILES/savegame"
+            test -L "$APP_FILES/logs"
+            jq -e ".name == \"CI Enshrouded Server\" and .userGroups[0].password == \"ci-secret\""               "$WORLD_FILES/enshrouded_server.json" >/dev/null
+          '
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish validated architecture image
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |
+            BASE_TAG=${{ matrix.base_tag }}
+          platforms: ${{ matrix.platform }}
+          tags: |
+            ${{ env.REGISTRY_IMAGE }}:${{ env.ARCH_TAG }}
+            ${{ env.REGISTRY_IMAGE }}:${{ env.DETAIL_TAG }}
+            ${{ env.LATEST_ARCH_TAG != '' && format('{0}:{1}', env.REGISTRY_IMAGE, env.LATEST_ARCH_TAG) || '' }}
+          cache-from: type=gha,scope=${{ matrix.base_tag }}-${{ matrix.arch }}
+          cache-to: type=gha,scope=${{ matrix.base_tag }}-${{ matrix.arch }},mode=max
+
+  create-manifest:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        family: [trixie, bookworm]
+
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare manifest tag
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/dev" ]]; then
+            FAMILY_TAG="${{ matrix.family }}_dev"
+          else
+            FAMILY_TAG="${{ matrix.family }}"
+          fi
+          echo "FAMILY_TAG=$FAMILY_TAG" >> "$GITHUB_ENV"
+
+      - name: Create family manifest
+        run: |
+          docker buildx imagetools create             --tag "${{ env.REGISTRY_IMAGE }}:${FAMILY_TAG}"             "${{ env.REGISTRY_IMAGE }}:${FAMILY_TAG}-amd64"             "${{ env.REGISTRY_IMAGE }}:${FAMILY_TAG}-arm64"
+
+      - name: Create latest manifest
+        if: github.ref == 'refs/heads/main' && matrix.family == 'trixie'
+        run: |
+          docker buildx imagetools create             --tag "${{ env.REGISTRY_IMAGE }}:latest"             "${{ env.REGISTRY_IMAGE }}:latest-amd64"             "${{ env.REGISTRY_IMAGE }}:latest-arm64"
+
+  notify:
+    needs: create-manifest
+    runs-on: ubuntu-latest
+    if: always() && github.event_name != 'pull_request'
+    steps:
+      - name: Report workflow status
+        run: |
+          if [[ "${{ needs.create-manifest.result }}" == "success" ]]; then
+            echo "::notice::Enshrouded images successfully built and pushed"
+          else
+            echo "::error::Failed to build or publish Enshrouded images"
+            exit 1
+          fi

@@ -1,0 +1,28 @@
+services:
+  enshrouded-server:
+    image: ghcr.io/teriyakidactyl/docker-enshrouded-server:latest
+    container_name: enshrouded-server
+    restart: unless-stopped
+    stop_grace_period: 100s
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-Enshrouded Server}
+      SERVER_IP: ${SERVER_IP:-0.0.0.0}
+      SERVER_QUERY_PORT: ${SERVER_QUERY_PORT:-15637}
+      SERVER_SLOT_COUNT: ${SERVER_SLOT_COUNT:-16}
+      SERVER_VOICE_CHAT_MODE: ${SERVER_VOICE_CHAT_MODE:-Proximity}
+      SERVER_ENABLE_VOICE_CHAT: ${SERVER_ENABLE_VOICE_CHAT:-false}
+      SERVER_ENABLE_TEXT_CHAT: ${SERVER_ENABLE_TEXT_CHAT:-false}
+      SERVER_GAME_SETTINGS_PRESET: ${SERVER_GAME_SETTINGS_PRESET:-Default}
+      UPDATE_ON_START: ${UPDATE_ON_START:-true}
+      STEAM_VALIDATE: ${STEAM_VALIDATE:-false}
+    volumes:
+      - enshrouded_app:/app
+      - enshrouded_world:/world
+    ports:
+      - "${SERVER_QUERY_PORT:-15637}:${SERVER_QUERY_PORT:-15637}/udp"
+
+volumes:
+  enshrouded_app:
+    name: enshrouded_app
+  enshrouded_world:
+    name: enshrouded_world
