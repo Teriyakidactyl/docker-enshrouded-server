@@ -41,11 +41,15 @@ RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends jq; \
     rm -rf /var/lib/apt/lists/*; \
-    mkdir -p "${HOOK_DIRECTORIES}/pre-startup"
+    mkdir -p "${HOOK_DIRECTORIES}/pre-startup" /usr/local/share/enshrouded
 
+COPY scripts/container/enshrouded_server.default.json /usr/local/share/enshrouded/enshrouded_server.default.json
 COPY scripts/container/hooks/pre-startup/30_enshrouded.sh ${HOOK_DIRECTORIES}/pre-startup/30_enshrouded.sh
 
-RUN chown root:root "${HOOK_DIRECTORIES}/pre-startup/30_enshrouded.sh" \
+RUN chown root:root \
+        /usr/local/share/enshrouded/enshrouded_server.default.json \
+        "${HOOK_DIRECTORIES}/pre-startup/30_enshrouded.sh" \
+    && chmod 0644 /usr/local/share/enshrouded/enshrouded_server.default.json \
     && chmod 0755 "${HOOK_DIRECTORIES}/pre-startup/30_enshrouded.sh"
 
 USER ${CONTAINER_USER}
