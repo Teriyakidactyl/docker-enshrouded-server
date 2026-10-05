@@ -4,6 +4,7 @@ set -Eeuo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOOK="$REPO_ROOT/scripts/container/hooks/pre-startup/30_enshrouded.sh"
+export ENSHROUDED_CONFIG_TEMPLATE="$REPO_ROOT/scripts/container/enshrouded_server.default.json"
 TMP_ROOT="$(mktemp -d)"
 trap 'rm -rf "$TMP_ROOT"' EXIT
 
@@ -15,15 +16,27 @@ export WORLD_FILES="$FRESH_ROOT/world"
 mkdir -p "$APP_FILES"
 printf 'fake exe\n' > "$APP_FILES/enshrouded_server.exe"
 unset ENSHROUDED_CONFIG_PATH ENSHROUDED_SAVE_PATH ENSHROUDED_LOG_PATH
-unset SERVER_ROLE_0_PASSWORD SERVER_ROLE_1_PASSWORD SERVER_ROLE_2_PASSWORD
+unset SERVER_ROLE_0_PASSWORD SERVER_ROLE_1_PASSWORD SERVER_ROLE_2_PASSWORD SERVER_ROLE_3_PASSWORD
 unset SERVER_PLAYER_PASS SERVER_ADMIN_PASS SERVER_PASSWORD
 source "$HOOK"
 FRESH_CONFIG="$WORLD_FILES/enshrouded_server.json"
 jq -e '
-    (.userGroups | length) == 3
+    (.userGroups | length) == 4
+    and (.userGroups[0].name == "Admin")
+    and (.userGroups[1].name == "Friend")
+    and (.userGroups[2].name == "Guest")
+    and (.userGroups[3].name == "Visitor")
     and (.userGroups[0].password | length) >= 24
     and (.userGroups[1].password | length) >= 24
     and (.userGroups[2].password | length) >= 24
+    and (.userGroups[3].password | length) >= 24
+    and (.userGroups[1].canEditWorld == true)
+    and (.userGroups[1].canExtendBase == false)
+    and (.userGroups[3].canEditWorld == false)
+    and (.tags | type == "array")
+    and (.bans | type == "array")
+    and (.gameSettings.playerHealthFactor == 1)
+    and (.gameSettings.tombstoneMode == "AddBackpackMaterials")
 ' "$FRESH_CONFIG" >/dev/null
 rm -rf "$FRESH_ROOT"
 
@@ -133,6 +146,8 @@ jq -e '
     and .userGroups[0].name == "Default"
     and .userGroups[0].password == "old-password"
     and .userGroups[0].canAccessInventories == true
+    and .userGroups[0].canEditWorld == true
+    and .userGroups[0].canExtendBase == false
     and .futureField == 42
 ' "$LEGACY_CONFIG" >/dev/null
 rm -rf "$LEGACY_ROOT"
