@@ -50,8 +50,9 @@ content is adopted into `/world` before the stable link is restored. Existing
 
 ## First start and passwords
 
-On a brand-new server, the image creates the current Enshrouded JSON structure
-with Admin, Friend, and Guest roles. Each role receives a randomized password.
+On a brand-new server, the image seeds the current Enshrouded default JSON schema,
+including `tags`, the full default `gameSettings`, `bans`, and the Admin, Friend,
+Guest, and Visitor roles. Each role receives a randomized password.
 Passwords are **not printed to container logs**. Read or replace them in
 `/world/enshrouded_server.json`, or explicitly configure role passwords through
 environment variables before first start.
@@ -66,6 +67,8 @@ environment:
   SERVER_ROLE_1_PASSWORD: change-me-friend
   SERVER_ROLE_2_NAME: Guest
   SERVER_ROLE_2_PASSWORD: change-me-guest
+  SERVER_ROLE_3_NAME: Visitor
+  SERVER_ROLE_3_PASSWORD: change-me-visitor
 ```
 
 The historical `SERVER_ADMIN_PASS` and `SERVER_PLAYER_PASS`/`SERVER_PASSWORD`
@@ -115,6 +118,10 @@ must be between 0 and 16.
 
 The current role model is documented upstream at:
 <https://enshrouded.zendesk.com/hc/en-us/articles/19191581489309-Server-Roles-Configuration>
+
+The image-owned first-run template tracks Keen's current default schema from the
+Server Gameplay Settings reference. Existing persistent JSON is never replaced
+with that template; only explicitly managed keys are reconciled.
 
 ## Advanced game settings
 
